@@ -1,0 +1,8 @@
+[Unit]
+After=network.target
+
+[Service]
+ExecStart=
+
+[Install]
+WantedBy=default.target

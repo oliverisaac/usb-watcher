@@ -1,0 +1,1437 @@
+#!/usr/bin/env bash
+# source code generated using shource: https://github.com/oliverisaac/shource
+# vim: autoindent tabstop=4 shiftwidth=4 expandtab softtabstop=4 ft=sh
+
+set -e # Exit on any error. Use `COMMAND || true` to nullify
+set -E # Functions inherit error trap
+set -u # Error on unset variables. Use ${var:-alternate value} to bypass
+set -f # Error on failed file globs (e.g. *.txt )
+set -o pipefail # Failed commands in pipes cause the whole pipe to fail
+
+LOG_LEVEL=0
+
+readonly seperator=":woeruweznorweorqweorweorqwoerqweorqwoer:"
+
+function main()
+{(
+    local watch_file="$1"
+    local log_tag="$2"
+    local call_this="$3"
+    local watch="$4"
+    local update="$5"
+    shift 5
+    local arguments=( "${@}" )
+
+    if $update; then
+        update_file "$watch_file" "$log_tag" "${arguments[@]}"
+    elif $watch; then
+        watch_file "$watch_file" "$log_tag" "$call_this"
+    fi
+)}
+
+function update_file(){(
+    local watch_file="$1"
+    local log_tag="$2"
+    shift 2
+    local arguments=( "${@}" )
+    local uuid="$( date +%s%3N)-$((RANDOM))"
+
+    {
+        printf "%s$seperator" "$uuid" "${arguments[@]}"
+        printf "\n"
+    } | sed "s/$seperator$//" | tee -a "$watch_file" | logger -t "$log_tag"
+)}
+
+function watch_file(){(
+    local watch_file="$1"
+    local log_tag="$2"
+    local command="$3"
+
+    mkfifo "$watch_file"  || true
+
+    if ! [[ -p "$watch_file" ]]; then
+        log 0 "Your watch file $watch_file is not a pipe. Please delete your watch file or spec a new/different file that either doesn't exist or is a named pipe."
+        exit 1
+    fi
+
+    tail -f "$watch_file" | while read line; do
+        if [[ $line == completed* ]]; then
+            continue
+        fi
+
+        local args=()
+        local index=2
+        local uuid="${line%%$seperator*}"
+
+        while word=$( echo "$line" |  awk -F"$seperator" "{ if( $index <= NF ){ print \$$index;} else { exit 1; } }"); do
+            index=$(( index + 1 ))
+            args+=( "$word" )
+        done
+
+        full_command=( $command "${args[@]}" )
+        {
+            printf "Calling this command:\n"
+            printf -- "- %s\n" "${full_command[@]}"
+            if ! "${full_command[@]}"; then
+                echo "Error running command: ${full_command[@]}"
+            fi
+        } 2>&1 | logger -t "${log_tag}"
+    done 
+)}
+
+
+function _display_help()
+{
+    cat - > >( sed -r -e "s/^ {,8}//" ) <<EOF
+        Sample help file
+        TADA!
+EOF
+}
+
+
+# Loops through passed in args and sets variables for each of them
+# Call like this: _parse_args help refresh debug -- "${@}"
+
+
+
+function json_escape()
+{(
+    set +x
+    local str="$1"
+    str="${str//\\/\\\\}" # \
+    str="${str//\//\\\/}" # /
+    str="${str//\"/\\\"}" # "
+    str="${str//$'\t'/\\t}" # \t (tab)
+    str="${str//$'\n'/\\\n}" # \n (newline)
+    str="${str//^M/\\\r}" # \r (carriage return)
+    str="${str//^L/\\\f}" # \f (form feed)
+    str="${str//^H/\\\b}" # \b (backspace)
+    printf "%s" "$str"
+)}
+
+
+function json_escape()
+{(
+    set +x
+    local str="$1"
+    str="${str//\\/\\\\}" # \
+    str="${str//\//\\\/}" # /
+    str="${str//\"/\\\"}" # "
+    str="${str//$'\t'/\\t}" # \t (tab)
+    str="${str//$'\n'/\\\n}" # \n (newline)
+    str="${str//^M/\\\r}" # \r (carriage return)
+    str="${str//^L/\\\f}" # \f (form feed)
+    str="${str//^H/\\\b}" # \b (backspace)
+    printf "%s" "$str"
+)}
+
+function json_print()
+{(
+    set +x
+
+
+    local args=( "${@}" )
+    local num_args=${#args[@]}
+    local i
+
+    printf "%s" "{"
+    for (( i=0; i<$num_args; i=i+2 )); do
+        local format="%s"
+        local key="${args[$i]}"
+        local value="${args[$i+1]}"
+
+        local type="${key##*:}"
+        if [[ $type != "" ]]; then
+            format="%$type"
+        fi
+
+        # IF it's a string type, then wrap in quotes
+        if [[ $format =~ s$ ]]; then
+            format="\"$format\""
+            value=$( json_escape "$value" )
+        fi
+
+        local comma=","
+        if [[ $i -eq 0 ]]; then
+            comma=""
+        fi
+
+        printf -- "$comma \"%s\": $format" "${key%%:*}" "$value"
+    done
+
+    printf "%s\n" "}"
+)}
+
+
+
+function json_escape()
+{(
+    set +x
+    local str="$1"
+    str="${str//\\/\\\\}" # \
+    str="${str//\//\\\/}" # /
+    str="${str//\"/\\\"}" # "
+    str="${str//$'\t'/\\t}" # \t (tab)
+    str="${str//$'\n'/\\\n}" # \n (newline)
+    str="${str//^M/\\\r}" # \r (carriage return)
+    str="${str//^L/\\\f}" # \f (form feed)
+    str="${str//^H/\\\b}" # \b (backspace)
+    printf "%s" "$str"
+)}
+
+
+function json_escape()
+{(
+    set +x
+    local str="$1"
+    str="${str//\\/\\\\}" # \
+    str="${str//\//\\\/}" # /
+    str="${str//\"/\\\"}" # "
+    str="${str//$'\t'/\\t}" # \t (tab)
+    str="${str//$'\n'/\\\n}" # \n (newline)
+    str="${str//^M/\\\r}" # \r (carriage return)
+    str="${str//^L/\\\f}" # \f (form feed)
+    str="${str//^H/\\\b}" # \b (backspace)
+    printf "%s" "$str"
+)}
+
+function json_print()
+{(
+    set +x
+
+
+    local args=( "${@}" )
+    local num_args=${#args[@]}
+    local i
+
+    printf "%s" "{"
+    for (( i=0; i<$num_args; i=i+2 )); do
+        local format="%s"
+        local key="${args[$i]}"
+        local value="${args[$i+1]}"
+
+        local type="${key##*:}"
+        if [[ $type != "" ]]; then
+            format="%$type"
+        fi
+
+        # IF it's a string type, then wrap in quotes
+        if [[ $format =~ s$ ]]; then
+            format="\"$format\""
+            value=$( json_escape "$value" )
+        fi
+
+        local comma=","
+        if [[ $i -eq 0 ]]; then
+            comma=""
+        fi
+
+        printf -- "$comma \"%s\": $format" "${key%%:*}" "$value"
+    done
+
+    printf "%s\n" "}"
+)}
+
+
+function _short_stack()
+{(
+    set +x
+    local STACK=""
+    local i 
+    local stack_size="${#FUNCNAME[@]}"
+    local response=""
+    local line_no
+
+    # to avoid noise we start with 1 to skip the get_stack function
+    for (( i=2; i<=( stack_size - 1 ); i++ )); do
+        local func="${FUNCNAME[$i]}"
+        [[ "$func" == "" ]] && func=MAIN
+        local linen="${BASH_LINENO[$(( i - 1 ))]}"
+        local src="${BASH_SOURCE[$i]}"
+        [[ "$src" == "" ]] && src=non_file_source
+
+        response="$func:${linen}${response:+.}${response:-}"
+
+    done
+    local bash_source="${BASH_SOURCE[0]}"
+    bash_source="${BASH_SOURCE##*/}"
+    echo "$bash_source.$response"
+)}
+
+function _short_stack()
+{(
+    set +x
+    local STACK=""
+    local i 
+    local stack_size="${#FUNCNAME[@]}"
+    local response=""
+    local line_no
+
+    # to avoid noise we start with 1 to skip the get_stack function
+    for (( i=2; i<=( stack_size - 1 ); i++ )); do
+        local func="${FUNCNAME[$i]}"
+        [[ "$func" == "" ]] && func=MAIN
+        local linen="${BASH_LINENO[$(( i - 1 ))]}"
+        local src="${BASH_SOURCE[$i]}"
+        [[ "$src" == "" ]] && src=non_file_source
+
+        response="$func:${linen}${response:+.}${response:-}"
+
+    done
+    local bash_source="${BASH_SOURCE[0]}"
+    bash_source="${BASH_SOURCE##*/}"
+    echo "$bash_source.$response"
+)}
+function log()
+{(
+    set +x
+
+    if ${USING_AUTO_LOG:-false}; then
+        exec 2>&9
+    fi
+
+    local level=0
+    if [[ $1 =~ ^-?[0-9]+$ ]]; then
+        local level="$1"
+        shift
+    fi
+    local args=( "${@}" )
+    if [[ $level -le ${LOG_LEVEL:-0} ]]; then
+        local time=$( date "+%Y-%m-%d %H:%M:%S.%3N" )
+        local message="${@}"
+
+        if [[ ${JSON_LOG_FORMAT:-false} == "false" ]]; then
+            echo "$time [log $level]: $message" > /dev/stderr
+        else
+            time=$( date -u +"%Y-%m-%dT%H:%M:%S.%3NZ" )
+            # We subtract one line number because shource adds a line at the beginning
+            json_print time:s "$time" level:d "$level" msg:s "$message" source:s "$( _short_stack )" > /dev/stderr
+        fi
+    fi
+) 
+}
+
+
+
+
+
+function json_escape()
+{(
+    set +x
+    local str="$1"
+    str="${str//\\/\\\\}" # \
+    str="${str//\//\\\/}" # /
+    str="${str//\"/\\\"}" # "
+    str="${str//$'\t'/\\t}" # \t (tab)
+    str="${str//$'\n'/\\\n}" # \n (newline)
+    str="${str//^M/\\\r}" # \r (carriage return)
+    str="${str//^L/\\\f}" # \f (form feed)
+    str="${str//^H/\\\b}" # \b (backspace)
+    printf "%s" "$str"
+)}
+
+
+function json_escape()
+{(
+    set +x
+    local str="$1"
+    str="${str//\\/\\\\}" # \
+    str="${str//\//\\\/}" # /
+    str="${str//\"/\\\"}" # "
+    str="${str//$'\t'/\\t}" # \t (tab)
+    str="${str//$'\n'/\\\n}" # \n (newline)
+    str="${str//^M/\\\r}" # \r (carriage return)
+    str="${str//^L/\\\f}" # \f (form feed)
+    str="${str//^H/\\\b}" # \b (backspace)
+    printf "%s" "$str"
+)}
+
+function json_print()
+{(
+    set +x
+
+
+    local args=( "${@}" )
+    local num_args=${#args[@]}
+    local i
+
+    printf "%s" "{"
+    for (( i=0; i<$num_args; i=i+2 )); do
+        local format="%s"
+        local key="${args[$i]}"
+        local value="${args[$i+1]}"
+
+        local type="${key##*:}"
+        if [[ $type != "" ]]; then
+            format="%$type"
+        fi
+
+        # IF it's a string type, then wrap in quotes
+        if [[ $format =~ s$ ]]; then
+            format="\"$format\""
+            value=$( json_escape "$value" )
+        fi
+
+        local comma=","
+        if [[ $i -eq 0 ]]; then
+            comma=""
+        fi
+
+        printf -- "$comma \"%s\": $format" "${key%%:*}" "$value"
+    done
+
+    printf "%s\n" "}"
+)}
+
+
+
+function json_escape()
+{(
+    set +x
+    local str="$1"
+    str="${str//\\/\\\\}" # \
+    str="${str//\//\\\/}" # /
+    str="${str//\"/\\\"}" # "
+    str="${str//$'\t'/\\t}" # \t (tab)
+    str="${str//$'\n'/\\\n}" # \n (newline)
+    str="${str//^M/\\\r}" # \r (carriage return)
+    str="${str//^L/\\\f}" # \f (form feed)
+    str="${str//^H/\\\b}" # \b (backspace)
+    printf "%s" "$str"
+)}
+
+
+function json_escape()
+{(
+    set +x
+    local str="$1"
+    str="${str//\\/\\\\}" # \
+    str="${str//\//\\\/}" # /
+    str="${str//\"/\\\"}" # "
+    str="${str//$'\t'/\\t}" # \t (tab)
+    str="${str//$'\n'/\\\n}" # \n (newline)
+    str="${str//^M/\\\r}" # \r (carriage return)
+    str="${str//^L/\\\f}" # \f (form feed)
+    str="${str//^H/\\\b}" # \b (backspace)
+    printf "%s" "$str"
+)}
+
+function json_print()
+{(
+    set +x
+
+
+    local args=( "${@}" )
+    local num_args=${#args[@]}
+    local i
+
+    printf "%s" "{"
+    for (( i=0; i<$num_args; i=i+2 )); do
+        local format="%s"
+        local key="${args[$i]}"
+        local value="${args[$i+1]}"
+
+        local type="${key##*:}"
+        if [[ $type != "" ]]; then
+            format="%$type"
+        fi
+
+        # IF it's a string type, then wrap in quotes
+        if [[ $format =~ s$ ]]; then
+            format="\"$format\""
+            value=$( json_escape "$value" )
+        fi
+
+        local comma=","
+        if [[ $i -eq 0 ]]; then
+            comma=""
+        fi
+
+        printf -- "$comma \"%s\": $format" "${key%%:*}" "$value"
+    done
+
+    printf "%s\n" "}"
+)}
+
+
+function _short_stack()
+{(
+    set +x
+    local STACK=""
+    local i 
+    local stack_size="${#FUNCNAME[@]}"
+    local response=""
+    local line_no
+
+    # to avoid noise we start with 1 to skip the get_stack function
+    for (( i=2; i<=( stack_size - 1 ); i++ )); do
+        local func="${FUNCNAME[$i]}"
+        [[ "$func" == "" ]] && func=MAIN
+        local linen="${BASH_LINENO[$(( i - 1 ))]}"
+        local src="${BASH_SOURCE[$i]}"
+        [[ "$src" == "" ]] && src=non_file_source
+
+        response="$func:${linen}${response:+.}${response:-}"
+
+    done
+    local bash_source="${BASH_SOURCE[0]}"
+    bash_source="${BASH_SOURCE##*/}"
+    echo "$bash_source.$response"
+)}
+
+function _short_stack()
+{(
+    set +x
+    local STACK=""
+    local i 
+    local stack_size="${#FUNCNAME[@]}"
+    local response=""
+    local line_no
+
+    # to avoid noise we start with 1 to skip the get_stack function
+    for (( i=2; i<=( stack_size - 1 ); i++ )); do
+        local func="${FUNCNAME[$i]}"
+        [[ "$func" == "" ]] && func=MAIN
+        local linen="${BASH_LINENO[$(( i - 1 ))]}"
+        local src="${BASH_SOURCE[$i]}"
+        [[ "$src" == "" ]] && src=non_file_source
+
+        response="$func:${linen}${response:+.}${response:-}"
+
+    done
+    local bash_source="${BASH_SOURCE[0]}"
+    bash_source="${BASH_SOURCE##*/}"
+    echo "$bash_source.$response"
+)}
+function log()
+{(
+    set +x
+
+    if ${USING_AUTO_LOG:-false}; then
+        exec 2>&9
+    fi
+
+    local level=0
+    if [[ $1 =~ ^-?[0-9]+$ ]]; then
+        local level="$1"
+        shift
+    fi
+    local args=( "${@}" )
+    if [[ $level -le ${LOG_LEVEL:-0} ]]; then
+        local time=$( date "+%Y-%m-%d %H:%M:%S.%3N" )
+        local message="${@}"
+
+        if [[ ${JSON_LOG_FORMAT:-false} == "false" ]]; then
+            echo "$time [log $level]: $message" > /dev/stderr
+        else
+            time=$( date -u +"%Y-%m-%dT%H:%M:%S.%3NZ" )
+            # We subtract one line number because shource adds a line at the beginning
+            json_print time:s "$time" level:d "$level" msg:s "$message" source:s "$( _short_stack )" > /dev/stderr
+        fi
+    fi
+) 
+}
+
+
+
+function parse_these()
+{
+    local boolean_flags=()
+    local array_flags=()
+    local input_args=( "${@}" )
+    local num_args=${#input_args[@]}
+    local this_arg i key value arg_type
+
+    log 2 "Called parse_args with these arguments: ${input_args[@]}"
+
+    for (( i=0; i<num_args; i++ )); do
+        this_arg="${input_args[$i]}"
+        if [[ $this_arg == "--" ]]; then
+            i=$(( i + 1 ))
+            break
+        fi
+        local arg_type=$BOOL_TYPE
+
+        if [[ $this_arg == *:b* ]]; then
+            arg_type=$BOOL_TYPE
+        elif [[ $this_arg == *:a* ]]; then
+            arg_type=$ARRAY_TYPE
+        fi
+
+        local flag="$( echo "${this_arg}" | tr '_-' '.' | sed 's/^-*//' | cut -d: -f1 )"
+
+        log 4 "$i : $this_arg : $arg_type"
+
+        case "$arg_type" in
+            $BOOL_TYPE)
+                boolean_flags+=( "$flag" )
+                printf "%s:%s:%s\n" "$arg_type" "${flag//./_}" "$( echo false | base64 -w0 )"
+            ;;
+            $ARRAY_TYPE)
+                array_flags+=( "$flag" )
+            ;;
+        esac
+    done
+
+    local boolean_regex=$( IFS='|'; echo "${boolean_flags[*]}" )
+    boolean_regex="^--(no-)?(${boolean_regex})(=(true|false))?$"
+
+    local array_regex=$( IFS='|'; echo "${array_flags[*]}" )
+    array_regex="^--(${array_regex})(=(.*))?$"
+
+    local populate_args=false
+    declare -g -a _args=()
+    for (( ; i<num_args; i++ )); do
+        this_arg="${input_args[$i]}"
+        log 4 "$i : $this_arg"
+
+        if [[ $this_arg == "--" ]]; then
+            populate_args=true
+            continue
+        fi
+
+        key=""
+        value=true
+        kind=$STRING_TYPE
+
+        # Boolean flags
+        if $populate_args; then
+            key="_args"
+            value="$this_arg"
+            kind=$ARRAY_TYPE
+        elif [[ ${#boolean_flags[@]} -gt 0 ]] && [[ $this_arg =~ $boolean_regex ]]; then
+            key="${BASH_REMATCH[2]}"
+
+            if [[ ${BASH_REMATCH[4]} == "false" ]]; then
+                if [[ ${BASH_REMATCH[1]} == "no-" ]]; then
+                    value=true
+                else
+                    value=false
+                fi
+            else
+                if [[ ${BASH_REMATCH[1]} == "no-" ]]; then
+                    value=false
+                else
+                    value=true
+                fi
+            fi
+            kind=$BOOL_TYPE
+        elif [[ ${#array_flags[@]} -gt 0 ]] && [[ $this_arg =~ $array_regex ]]; then
+            key="${BASH_REMATCH[1]}"
+            if [[ ${BASH_REMATCH[2]} == "" ]]; then
+                ((i++))
+                value="${input_args[$i]}"
+            else
+                value="${BASH_REMATCH[3]}"
+            fi
+
+            kind=$ARRAY_TYPE
+        elif [[ $this_arg =~ ^--([^=]+)=(.*)$ ]]; then
+            key="${BASH_REMATCH[1]}"
+            value="${BASH_REMATCH[2]}"
+            kind=$STRING_TYPE
+        elif [[ $this_arg =~ ^--(.+)$ ]]; then
+            key="${BASH_REMATCH[1]}"
+            ((i++))
+            value="${input_args[$i]}"
+            kind=$STRING_TYPE
+        fi
+
+        key="${key//-/_}"
+        if [[ $key == "" ]]; then
+            key="_args"
+            value="$this_arg"
+            kind=$ARRAY_TYPE
+        fi
+        printf "%s:%s:%s\n" "$kind" "$key" "$( printf "%s" "$value" | base64 -w0 )"
+    done
+}
+
+function parse_args()
+{
+    local reset_x=false
+    local ARRAY_TYPE=array BOOL_TYPE=boolean STRING_TYPE=string
+
+    if [[ $- =~ x ]]; then
+        reset_x=true
+    fi
+    set +x
+
+
+    local key b64value
+    declare -a -g this_arr
+    while IFS=':' read kind key b64value; do
+        local value=$( echo "$b64value" | base64 --decode )
+
+        if [[ "$kind" == "$ARRAY_TYPE" ]]; then
+            declare -n this_arr="$key"
+
+            # If this_arr is unset
+            if [[ -v $key[@] ]]; then
+                this_arr=( "${this_arr[@]}" "${value}" )
+            else
+                declare -g -a $key
+                declare -n this_arr="$key"
+                this_arr=( "${value}" )
+            fi
+        else
+            declare -g "$key"="$value"
+        fi
+    done < <( parse_these "${@}" ) 
+
+    $reset_x && set -x || true
+
+    return 0
+}
+
+# Loops through passed in args and sets variables for each of them
+# Call like this: _parse_args help refresh debug -- "${@}"
+
+
+
+function json_escape()
+{(
+    set +x
+    local str="$1"
+    str="${str//\\/\\\\}" # \
+    str="${str//\//\\\/}" # /
+    str="${str//\"/\\\"}" # "
+    str="${str//$'\t'/\\t}" # \t (tab)
+    str="${str//$'\n'/\\\n}" # \n (newline)
+    str="${str//^M/\\\r}" # \r (carriage return)
+    str="${str//^L/\\\f}" # \f (form feed)
+    str="${str//^H/\\\b}" # \b (backspace)
+    printf "%s" "$str"
+)}
+
+
+function json_escape()
+{(
+    set +x
+    local str="$1"
+    str="${str//\\/\\\\}" # \
+    str="${str//\//\\\/}" # /
+    str="${str//\"/\\\"}" # "
+    str="${str//$'\t'/\\t}" # \t (tab)
+    str="${str//$'\n'/\\\n}" # \n (newline)
+    str="${str//^M/\\\r}" # \r (carriage return)
+    str="${str//^L/\\\f}" # \f (form feed)
+    str="${str//^H/\\\b}" # \b (backspace)
+    printf "%s" "$str"
+)}
+
+function json_print()
+{(
+    set +x
+
+
+    local args=( "${@}" )
+    local num_args=${#args[@]}
+    local i
+
+    printf "%s" "{"
+    for (( i=0; i<$num_args; i=i+2 )); do
+        local format="%s"
+        local key="${args[$i]}"
+        local value="${args[$i+1]}"
+
+        local type="${key##*:}"
+        if [[ $type != "" ]]; then
+            format="%$type"
+        fi
+
+        # IF it's a string type, then wrap in quotes
+        if [[ $format =~ s$ ]]; then
+            format="\"$format\""
+            value=$( json_escape "$value" )
+        fi
+
+        local comma=","
+        if [[ $i -eq 0 ]]; then
+            comma=""
+        fi
+
+        printf -- "$comma \"%s\": $format" "${key%%:*}" "$value"
+    done
+
+    printf "%s\n" "}"
+)}
+
+
+
+function json_escape()
+{(
+    set +x
+    local str="$1"
+    str="${str//\\/\\\\}" # \
+    str="${str//\//\\\/}" # /
+    str="${str//\"/\\\"}" # "
+    str="${str//$'\t'/\\t}" # \t (tab)
+    str="${str//$'\n'/\\\n}" # \n (newline)
+    str="${str//^M/\\\r}" # \r (carriage return)
+    str="${str//^L/\\\f}" # \f (form feed)
+    str="${str//^H/\\\b}" # \b (backspace)
+    printf "%s" "$str"
+)}
+
+
+function json_escape()
+{(
+    set +x
+    local str="$1"
+    str="${str//\\/\\\\}" # \
+    str="${str//\//\\\/}" # /
+    str="${str//\"/\\\"}" # "
+    str="${str//$'\t'/\\t}" # \t (tab)
+    str="${str//$'\n'/\\\n}" # \n (newline)
+    str="${str//^M/\\\r}" # \r (carriage return)
+    str="${str//^L/\\\f}" # \f (form feed)
+    str="${str//^H/\\\b}" # \b (backspace)
+    printf "%s" "$str"
+)}
+
+function json_print()
+{(
+    set +x
+
+
+    local args=( "${@}" )
+    local num_args=${#args[@]}
+    local i
+
+    printf "%s" "{"
+    for (( i=0; i<$num_args; i=i+2 )); do
+        local format="%s"
+        local key="${args[$i]}"
+        local value="${args[$i+1]}"
+
+        local type="${key##*:}"
+        if [[ $type != "" ]]; then
+            format="%$type"
+        fi
+
+        # IF it's a string type, then wrap in quotes
+        if [[ $format =~ s$ ]]; then
+            format="\"$format\""
+            value=$( json_escape "$value" )
+        fi
+
+        local comma=","
+        if [[ $i -eq 0 ]]; then
+            comma=""
+        fi
+
+        printf -- "$comma \"%s\": $format" "${key%%:*}" "$value"
+    done
+
+    printf "%s\n" "}"
+)}
+
+
+function _short_stack()
+{(
+    set +x
+    local STACK=""
+    local i 
+    local stack_size="${#FUNCNAME[@]}"
+    local response=""
+    local line_no
+
+    # to avoid noise we start with 1 to skip the get_stack function
+    for (( i=2; i<=( stack_size - 1 ); i++ )); do
+        local func="${FUNCNAME[$i]}"
+        [[ "$func" == "" ]] && func=MAIN
+        local linen="${BASH_LINENO[$(( i - 1 ))]}"
+        local src="${BASH_SOURCE[$i]}"
+        [[ "$src" == "" ]] && src=non_file_source
+
+        response="$func:${linen}${response:+.}${response:-}"
+
+    done
+    local bash_source="${BASH_SOURCE[0]}"
+    bash_source="${BASH_SOURCE##*/}"
+    echo "$bash_source.$response"
+)}
+
+function _short_stack()
+{(
+    set +x
+    local STACK=""
+    local i 
+    local stack_size="${#FUNCNAME[@]}"
+    local response=""
+    local line_no
+
+    # to avoid noise we start with 1 to skip the get_stack function
+    for (( i=2; i<=( stack_size - 1 ); i++ )); do
+        local func="${FUNCNAME[$i]}"
+        [[ "$func" == "" ]] && func=MAIN
+        local linen="${BASH_LINENO[$(( i - 1 ))]}"
+        local src="${BASH_SOURCE[$i]}"
+        [[ "$src" == "" ]] && src=non_file_source
+
+        response="$func:${linen}${response:+.}${response:-}"
+
+    done
+    local bash_source="${BASH_SOURCE[0]}"
+    bash_source="${BASH_SOURCE##*/}"
+    echo "$bash_source.$response"
+)}
+function log()
+{(
+    set +x
+
+    if ${USING_AUTO_LOG:-false}; then
+        exec 2>&9
+    fi
+
+    local level=0
+    if [[ $1 =~ ^-?[0-9]+$ ]]; then
+        local level="$1"
+        shift
+    fi
+    local args=( "${@}" )
+    if [[ $level -le ${LOG_LEVEL:-0} ]]; then
+        local time=$( date "+%Y-%m-%d %H:%M:%S.%3N" )
+        local message="${@}"
+
+        if [[ ${JSON_LOG_FORMAT:-false} == "false" ]]; then
+            echo "$time [log $level]: $message" > /dev/stderr
+        else
+            time=$( date -u +"%Y-%m-%dT%H:%M:%S.%3NZ" )
+            # We subtract one line number because shource adds a line at the beginning
+            json_print time:s "$time" level:d "$level" msg:s "$message" source:s "$( _short_stack )" > /dev/stderr
+        fi
+    fi
+) 
+}
+
+
+
+
+
+function json_escape()
+{(
+    set +x
+    local str="$1"
+    str="${str//\\/\\\\}" # \
+    str="${str//\//\\\/}" # /
+    str="${str//\"/\\\"}" # "
+    str="${str//$'\t'/\\t}" # \t (tab)
+    str="${str//$'\n'/\\\n}" # \n (newline)
+    str="${str//^M/\\\r}" # \r (carriage return)
+    str="${str//^L/\\\f}" # \f (form feed)
+    str="${str//^H/\\\b}" # \b (backspace)
+    printf "%s" "$str"
+)}
+
+
+function json_escape()
+{(
+    set +x
+    local str="$1"
+    str="${str//\\/\\\\}" # \
+    str="${str//\//\\\/}" # /
+    str="${str//\"/\\\"}" # "
+    str="${str//$'\t'/\\t}" # \t (tab)
+    str="${str//$'\n'/\\\n}" # \n (newline)
+    str="${str//^M/\\\r}" # \r (carriage return)
+    str="${str//^L/\\\f}" # \f (form feed)
+    str="${str//^H/\\\b}" # \b (backspace)
+    printf "%s" "$str"
+)}
+
+function json_print()
+{(
+    set +x
+
+
+    local args=( "${@}" )
+    local num_args=${#args[@]}
+    local i
+
+    printf "%s" "{"
+    for (( i=0; i<$num_args; i=i+2 )); do
+        local format="%s"
+        local key="${args[$i]}"
+        local value="${args[$i+1]}"
+
+        local type="${key##*:}"
+        if [[ $type != "" ]]; then
+            format="%$type"
+        fi
+
+        # IF it's a string type, then wrap in quotes
+        if [[ $format =~ s$ ]]; then
+            format="\"$format\""
+            value=$( json_escape "$value" )
+        fi
+
+        local comma=","
+        if [[ $i -eq 0 ]]; then
+            comma=""
+        fi
+
+        printf -- "$comma \"%s\": $format" "${key%%:*}" "$value"
+    done
+
+    printf "%s\n" "}"
+)}
+
+
+
+function json_escape()
+{(
+    set +x
+    local str="$1"
+    str="${str//\\/\\\\}" # \
+    str="${str//\//\\\/}" # /
+    str="${str//\"/\\\"}" # "
+    str="${str//$'\t'/\\t}" # \t (tab)
+    str="${str//$'\n'/\\\n}" # \n (newline)
+    str="${str//^M/\\\r}" # \r (carriage return)
+    str="${str//^L/\\\f}" # \f (form feed)
+    str="${str//^H/\\\b}" # \b (backspace)
+    printf "%s" "$str"
+)}
+
+
+function json_escape()
+{(
+    set +x
+    local str="$1"
+    str="${str//\\/\\\\}" # \
+    str="${str//\//\\\/}" # /
+    str="${str//\"/\\\"}" # "
+    str="${str//$'\t'/\\t}" # \t (tab)
+    str="${str//$'\n'/\\\n}" # \n (newline)
+    str="${str//^M/\\\r}" # \r (carriage return)
+    str="${str//^L/\\\f}" # \f (form feed)
+    str="${str//^H/\\\b}" # \b (backspace)
+    printf "%s" "$str"
+)}
+
+function json_print()
+{(
+    set +x
+
+
+    local args=( "${@}" )
+    local num_args=${#args[@]}
+    local i
+
+    printf "%s" "{"
+    for (( i=0; i<$num_args; i=i+2 )); do
+        local format="%s"
+        local key="${args[$i]}"
+        local value="${args[$i+1]}"
+
+        local type="${key##*:}"
+        if [[ $type != "" ]]; then
+            format="%$type"
+        fi
+
+        # IF it's a string type, then wrap in quotes
+        if [[ $format =~ s$ ]]; then
+            format="\"$format\""
+            value=$( json_escape "$value" )
+        fi
+
+        local comma=","
+        if [[ $i -eq 0 ]]; then
+            comma=""
+        fi
+
+        printf -- "$comma \"%s\": $format" "${key%%:*}" "$value"
+    done
+
+    printf "%s\n" "}"
+)}
+
+
+function _short_stack()
+{(
+    set +x
+    local STACK=""
+    local i 
+    local stack_size="${#FUNCNAME[@]}"
+    local response=""
+    local line_no
+
+    # to avoid noise we start with 1 to skip the get_stack function
+    for (( i=2; i<=( stack_size - 1 ); i++ )); do
+        local func="${FUNCNAME[$i]}"
+        [[ "$func" == "" ]] && func=MAIN
+        local linen="${BASH_LINENO[$(( i - 1 ))]}"
+        local src="${BASH_SOURCE[$i]}"
+        [[ "$src" == "" ]] && src=non_file_source
+
+        response="$func:${linen}${response:+.}${response:-}"
+
+    done
+    local bash_source="${BASH_SOURCE[0]}"
+    bash_source="${BASH_SOURCE##*/}"
+    echo "$bash_source.$response"
+)}
+
+function _short_stack()
+{(
+    set +x
+    local STACK=""
+    local i 
+    local stack_size="${#FUNCNAME[@]}"
+    local response=""
+    local line_no
+
+    # to avoid noise we start with 1 to skip the get_stack function
+    for (( i=2; i<=( stack_size - 1 ); i++ )); do
+        local func="${FUNCNAME[$i]}"
+        [[ "$func" == "" ]] && func=MAIN
+        local linen="${BASH_LINENO[$(( i - 1 ))]}"
+        local src="${BASH_SOURCE[$i]}"
+        [[ "$src" == "" ]] && src=non_file_source
+
+        response="$func:${linen}${response:+.}${response:-}"
+
+    done
+    local bash_source="${BASH_SOURCE[0]}"
+    bash_source="${BASH_SOURCE##*/}"
+    echo "$bash_source.$response"
+)}
+function log()
+{(
+    set +x
+
+    if ${USING_AUTO_LOG:-false}; then
+        exec 2>&9
+    fi
+
+    local level=0
+    if [[ $1 =~ ^-?[0-9]+$ ]]; then
+        local level="$1"
+        shift
+    fi
+    local args=( "${@}" )
+    if [[ $level -le ${LOG_LEVEL:-0} ]]; then
+        local time=$( date "+%Y-%m-%d %H:%M:%S.%3N" )
+        local message="${@}"
+
+        if [[ ${JSON_LOG_FORMAT:-false} == "false" ]]; then
+            echo "$time [log $level]: $message" > /dev/stderr
+        else
+            time=$( date -u +"%Y-%m-%dT%H:%M:%S.%3NZ" )
+            # We subtract one line number because shource adds a line at the beginning
+            json_print time:s "$time" level:d "$level" msg:s "$message" source:s "$( _short_stack )" > /dev/stderr
+        fi
+    fi
+) 
+}
+
+
+
+function parse_these()
+{
+    local boolean_flags=()
+    local array_flags=()
+    local input_args=( "${@}" )
+    local num_args=${#input_args[@]}
+    local this_arg i key value arg_type
+
+    log 2 "Called parse_args with these arguments: ${input_args[@]}"
+
+    for (( i=0; i<num_args; i++ )); do
+        this_arg="${input_args[$i]}"
+        if [[ $this_arg == "--" ]]; then
+            i=$(( i + 1 ))
+            break
+        fi
+        local arg_type=$BOOL_TYPE
+
+        if [[ $this_arg == *:b* ]]; then
+            arg_type=$BOOL_TYPE
+        elif [[ $this_arg == *:a* ]]; then
+            arg_type=$ARRAY_TYPE
+        fi
+
+        local flag="$( echo "${this_arg}" | tr '_-' '.' | sed 's/^-*//' | cut -d: -f1 )"
+
+        log 4 "$i : $this_arg : $arg_type"
+
+        case "$arg_type" in
+            $BOOL_TYPE)
+                boolean_flags+=( "$flag" )
+                printf "%s:%s:%s\n" "$arg_type" "${flag//./_}" "$( echo false | base64 -w0 )"
+            ;;
+            $ARRAY_TYPE)
+                array_flags+=( "$flag" )
+            ;;
+        esac
+    done
+
+    local boolean_regex=$( IFS='|'; echo "${boolean_flags[*]}" )
+    boolean_regex="^--(no-)?(${boolean_regex})(=(true|false))?$"
+
+    local array_regex=$( IFS='|'; echo "${array_flags[*]}" )
+    array_regex="^--(${array_regex})(=(.*))?$"
+
+    local populate_args=false
+    declare -g -a _args=()
+    for (( ; i<num_args; i++ )); do
+        this_arg="${input_args[$i]}"
+        log 4 "$i : $this_arg"
+
+        if [[ $this_arg == "--" ]]; then
+            populate_args=true
+            continue
+        fi
+
+        key=""
+        value=true
+        kind=$STRING_TYPE
+
+        # Boolean flags
+        if $populate_args; then
+            key="_args"
+            value="$this_arg"
+            kind=$ARRAY_TYPE
+        elif [[ ${#boolean_flags[@]} -gt 0 ]] && [[ $this_arg =~ $boolean_regex ]]; then
+            key="${BASH_REMATCH[2]}"
+
+            if [[ ${BASH_REMATCH[4]} == "false" ]]; then
+                if [[ ${BASH_REMATCH[1]} == "no-" ]]; then
+                    value=true
+                else
+                    value=false
+                fi
+            else
+                if [[ ${BASH_REMATCH[1]} == "no-" ]]; then
+                    value=false
+                else
+                    value=true
+                fi
+            fi
+            kind=$BOOL_TYPE
+        elif [[ ${#array_flags[@]} -gt 0 ]] && [[ $this_arg =~ $array_regex ]]; then
+            key="${BASH_REMATCH[1]}"
+            if [[ ${BASH_REMATCH[2]} == "" ]]; then
+                ((i++))
+                value="${input_args[$i]}"
+            else
+                value="${BASH_REMATCH[3]}"
+            fi
+
+            kind=$ARRAY_TYPE
+        elif [[ $this_arg =~ ^--([^=]+)=(.*)$ ]]; then
+            key="${BASH_REMATCH[1]}"
+            value="${BASH_REMATCH[2]}"
+            kind=$STRING_TYPE
+        elif [[ $this_arg =~ ^--(.+)$ ]]; then
+            key="${BASH_REMATCH[1]}"
+            ((i++))
+            value="${input_args[$i]}"
+            kind=$STRING_TYPE
+        fi
+
+        key="${key//-/_}"
+        if [[ $key == "" ]]; then
+            key="_args"
+            value="$this_arg"
+            kind=$ARRAY_TYPE
+        fi
+        printf "%s:%s:%s\n" "$kind" "$key" "$( printf "%s" "$value" | base64 -w0 )"
+    done
+}
+
+function parse_args()
+{
+    local reset_x=false
+    local ARRAY_TYPE=array BOOL_TYPE=boolean STRING_TYPE=string
+
+    if [[ $- =~ x ]]; then
+        reset_x=true
+    fi
+    set +x
+
+
+    local key b64value
+    declare -a -g this_arr
+    while IFS=':' read kind key b64value; do
+        local value=$( echo "$b64value" | base64 --decode )
+
+        if [[ "$kind" == "$ARRAY_TYPE" ]]; then
+            declare -n this_arr="$key"
+
+            # If this_arr is unset
+            if [[ -v $key[@] ]]; then
+                this_arr=( "${this_arr[@]}" "${value}" )
+            else
+                declare -g -a $key
+                declare -n this_arr="$key"
+                this_arr=( "${value}" )
+            fi
+        else
+            declare -g "$key"="$value"
+        fi
+    done < <( parse_these "${@}" ) 
+
+    $reset_x && set -x || true
+
+    return 0
+}
+
+# On exit is called on every exit
+function _on_exit()
+{
+    # Cleanup code goes here
+    local exit_status="$?"
+}
+
+function _on_term()
+{
+    echo "Terminated!" >&2
+    # A termination also tends to call an error, so we block that
+    trap '' ERR
+}
+
+function _on_error()
+{
+    local lineno=$1
+    shift
+    local pipe_fails=( "${@}" )
+    echo "ERROR (${pipe_fails[@]}) on line $lineno: Most recent call last:" >&2
+    _print_stack >&2
+    local x
+    for x in ${pipe_fails[@]}; do
+        if [[ $x -ne 0 ]]; then
+            exit $x
+        fi
+    done
+    exit 1
+}
+
+
+function _print_stack()
+{(
+    set +x
+   local STACK=""
+   local i 
+   local stack_size="${#FUNCNAME[@]}"
+   # to avoid noise we start with 1 to skip the get_stack function
+   for (( i=( stack_size - 1 ); i>=2; i-- )); do
+      local func="${FUNCNAME[$i]}"
+      [ x$func = x ] && func=MAIN
+      local linen="${BASH_LINENO[$(( i - 1 ))]}"
+      local src="${BASH_SOURCE[$i]}"
+      [ x"$src" = x ] && src=non_file_source
+
+      echo "   at: $func $src:$linen"
+   done
+)}
+
+
+function _print_stack()
+{(
+    set +x
+   local STACK=""
+   local i 
+   local stack_size="${#FUNCNAME[@]}"
+   # to avoid noise we start with 1 to skip the get_stack function
+   for (( i=( stack_size - 1 ); i>=2; i-- )); do
+      local func="${FUNCNAME[$i]}"
+      [ x$func = x ] && func=MAIN
+      local linen="${BASH_LINENO[$(( i - 1 ))]}"
+      local src="${BASH_SOURCE[$i]}"
+      [ x"$src" = x ] && src=non_file_source
+
+      echo "   at: $func $src:$linen"
+   done
+)}
+
+
+trap '_on_term' HUP TERM INT
+trap '_on_error $LINENO ${PIPESTATUS[@]}' ERR
+trap '_on_exit' EXIT
+
+# On exit is called on every exit
+function _on_exit()
+{
+    # Cleanup code goes here
+    local exit_status="$?"
+}
+
+function _on_term()
+{
+    echo "Terminated!" >&2
+    # A termination also tends to call an error, so we block that
+    trap '' ERR
+}
+
+function _on_error()
+{
+    local lineno=$1
+    shift
+    local pipe_fails=( "${@}" )
+    echo "ERROR (${pipe_fails[@]}) on line $lineno: Most recent call last:" >&2
+    _print_stack >&2
+    local x
+    for x in ${pipe_fails[@]}; do
+        if [[ $x -ne 0 ]]; then
+            exit $x
+        fi
+    done
+    exit 1
+}
+
+
+function _print_stack()
+{(
+    set +x
+   local STACK=""
+   local i 
+   local stack_size="${#FUNCNAME[@]}"
+   # to avoid noise we start with 1 to skip the get_stack function
+   for (( i=( stack_size - 1 ); i>=2; i-- )); do
+      local func="${FUNCNAME[$i]}"
+      [ x$func = x ] && func=MAIN
+      local linen="${BASH_LINENO[$(( i - 1 ))]}"
+      local src="${BASH_SOURCE[$i]}"
+      [ x"$src" = x ] && src=non_file_source
+
+      echo "   at: $func $src:$linen"
+   done
+)}
+
+
+function _print_stack()
+{(
+    set +x
+   local STACK=""
+   local i 
+   local stack_size="${#FUNCNAME[@]}"
+   # to avoid noise we start with 1 to skip the get_stack function
+   for (( i=( stack_size - 1 ); i>=2; i-- )); do
+      local func="${FUNCNAME[$i]}"
+      [ x$func = x ] && func=MAIN
+      local linen="${BASH_LINENO[$(( i - 1 ))]}"
+      local src="${BASH_SOURCE[$i]}"
+      [ x"$src" = x ] && src=non_file_source
+
+      echo "   at: $func $src:$linen"
+   done
+)}
+
+
+trap '_on_term' HUP TERM INT
+trap '_on_error $LINENO ${PIPESTATUS[@]}' ERR
+trap '_on_exit' EXIT
+
+# Check if any of the args are a cry for help
+if echo "${@}" | grep -q -wiEe "-h|--help|help"; then
+    _display_help
+    exit 4
+fi
+
+parse_args update:bool watch:bool arg:array -- "${@}"
+main "${watch_file:-/tmp/usb-watcher.pipe}" "${log_tag:-usb-watcher}" "${call_this:-}" "${watch:-false}" "${update:-false}" "${arg[@]}"
+
+exit $?

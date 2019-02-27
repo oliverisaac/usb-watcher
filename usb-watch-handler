@@ -1,0 +1,29 @@
+#!/bin/bash
+
+exec 2> >( logger -t usb-watch-handler )
+exec 1> >( logger -t usb-watch-handler )
+
+set -x 
+set -e
+
+timeout=$(( $( date +%s ) + 30 ))
+
+if [[ "$ACTION" =~ "add"  ]] && [[ $ID_MODEL == "Flash_Disk" ]]; then
+	
+	# Wait for the device to be mounted or wait for timeout to hit
+	until df -Ph "$DEVNAME" || [[ $( date +%s ) -gt $timeout ]]; do
+		sleep 0.5
+	done
+
+	# test timeout
+	if [[ $( date +%s ) -gt $timeout ]]; then
+		echo "Timed out waiting for device"
+		exit 1
+	fi
+
+	# Get moountpath
+	mountpath=$( df -Ph "$DEVNAME" | tail -n1 | awk '{print $NF}' )
+
+	# call usb-watcher
+	/app/usb-watcher/usb-watch --update --arg="$mountpath"
+fi
