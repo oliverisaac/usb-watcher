@@ -6,6 +6,7 @@ mypath="$( dirname "$( readlink -f "$0" )" )"
 command="${command:-$mypath/example-callable.sh}"
 
 sudo apt-get install usbmount -y
+sudo sed -i"" '/^MountFlags=/s/slave/shared/' /lib/systemd/system/systemd-udevd.service
 
 sudo tee /etc/systemd/system/usb-watch.service <<EOF 
 [Unit]
